@@ -9,7 +9,8 @@ data:
   test_data_dir: ./input/test
   test_df_path: ./input/test.csv
   train_data_dir: ./input/train
-  train_df_path: ./input/train.csv
+  train_df_path: ./input/train_folds.csv
+  model_save_dir: ./models/${globals.ex_name}
 defaults:
 - _self_
 - model: MyNet

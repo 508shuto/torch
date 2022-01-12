@@ -1,3 +1,4 @@
+from genericpath import exists
 import os
 import sys
 import gc
@@ -10,14 +11,13 @@ import numpy as np
 from omegaconf.dictconfig import DictConfig
 import pandas as pd
 
-from sklearn.model_selection import StratifiedKFold, KFold
-
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import DataLoader, Dataset
 
 import torchvision
 import torchvision.transforms as transforms
+import albumentations
 
 from src.model import get_model
 from src.dataset import load_MNIST, ClassificationDataset
@@ -31,12 +31,12 @@ from src.configuration import get_device, get_optimizer, get_criterion, get_sche
 def create_train_val_info(df, cfg):
     df_train = df[df.kfold != cfg['globals']['fold']].reset_index(drop=True)
     train_pth = df_train.ImageID.values.tolist()
-    train_pth = [os.path.join(cfg['data']['train']['train_data_dir'], i+'png') for i in train_pth]
+    train_pth = [hydra.utils.to_absolute_path(os.path.join(cfg['data']['train_data_dir'], i)) for i in train_pth]
     train_targets = df_train.target.values
 
     df_valid = df[df.kfold == cfg['globals']['fold']].reset_index(drop=True)
     valid_pth = df_valid.ImageID.values.tolist()
-    valid_pth = [os.path.join(cfg['data']['train']['train_data_dir'], i+'png') for i in valid_pth]
+    valid_pth = [hydra.utils.to_absolute_path(os.path.join(cfg['data']['train_data_dir'], i)) for i in valid_pth]
     valid_targets = df_valid.target.values    
     return train_pth, train_targets, valid_pth, valid_targets
 
@@ -45,7 +45,7 @@ def run(cfg: DictConfig) -> None:
     debug = cfg['globals']['debug']
     fold = cfg['globals']['fold']
     
-    df = pd.read_csv(hydra.utils.to_absolute_path(cfg['data']['train']['train_df_path']))
+    df = pd.read_csv(hydra.utils.to_absolute_path(cfg['data']['train_df_path']))
     
     train_images, train_targets, valid_images, valid_targets = create_train_val_info(df, cfg)
     
@@ -62,6 +62,23 @@ def run(cfg: DictConfig) -> None:
             transforms.Normalize((0.1307,), (0.3081,)),
             ]),
     }
+    
+    # ImageNet データセットの各チャンネルの平均と標準偏差
+    # 事前学習済みの重みを使う場合、事前時計算した値を利用
+    # 使わない場合、対象のデータセットで別途計算した値を使う
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.244, 0.225)
+
+    # albumentations は様々な画像のデータ拡張が利用できるライブラリ
+    # ここでは正規化のみを利用
+    # always_apply=Trueにして、正規化を常に適用
+    aug = albumentations.Compose(
+        [
+            albumentations.Normalize(
+                mean, std, max_pixel_value=255.0, always_apply=True
+            )
+        ]
+    )
     # エポック数
     if debug:
         epochs = 1
@@ -84,14 +101,14 @@ def run(cfg: DictConfig) -> None:
         train_dataset = ClassificationDataset(
             image_path=train_images,
             targets=train_targets,
-            resize=None,
-            augmentations=transform['train']
+            resize=(28, 28),
+            augmentations=aug
             )
         valid_dataset = ClassificationDataset(
             image_path=valid_images,
             targets=valid_targets,
-            resize=None,
-            augmentations=transform['valid']
+            resize=(28, 28),
+            augmentations=aug
             )
 
     
@@ -123,6 +140,8 @@ def run(cfg: DictConfig) -> None:
     best_score = 0.
     best_thresh = 0.
     best_loss = np.inf
+    early_epoch = 10
+    count = 0
     
     # TODO:fast progressの実装
     for epoch in range(epochs): 
@@ -161,10 +180,19 @@ def run(cfg: DictConfig) -> None:
         if debug:
             pass
         elif score > best_score:
+            count = 0
             best_score = score
             print(f'Epoch: {epoch+1} - SaveBestScore: {best_score:.4f}')
-            torch.save(model.state_dict(), hydra.utils.to_absolute_path(f'models/fold_{fold:02d}_bestscore.pth'))
-
+            if not os.path.exists(hydra.utils.to_absolute_path(cfg['data']['model_save_dir'])):
+                os.makedirs(hydra.utils.to_absolute_path(cfg['data']['model_save_dir']), exist_ok=True)
+            else:
+                pass
+            torch.save(model.state_dict(), hydra.utils.to_absolute_path(f'{cfg['data']['model_save_dir']}/fold_{fold:02d}_bestscore.pth'))
+        elif early_epoch < count:
+            break
+        else:
+            count += 1
+            
     # 結果表示
     print(history)
     if debug:

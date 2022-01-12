@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import timm
+
 def get_model(config):
     """[summary]
 
@@ -24,8 +26,8 @@ def get_model(config):
 class MyNet(nn.Module):
     def __init__(self, params=None):
         super(MyNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.conv1 = nn.Conv2d(3, 256, 3, 1)
+        self.conv2 = nn.Conv2d(256, 64, 3, 1)
         self.pool = nn.MaxPool2d(2, 2)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
@@ -130,4 +132,17 @@ class AlexNet(nn.Module):
         # バッチ単位で1以下の確率に変換
         x = torch.softmax(x, dim=1)    # サイズ： (bs, 1000)
         return x
-    
+
+class EfficientNet_v2(nn.Module):
+    """
+    Model Class for EfficientNet v2 Model
+    """
+    def __init__(self, num_classes=3, model_name='tf_efficientnetv2_b0', pretrained=True):
+        super(EfficientNet_v2, self).__init__()
+        self.model = timm.create_model(model_name, pretrained=pretrained, in_chans=3)
+        self.model.classifier = nn.Linear(self.model.classifier.in_features, num_classes)
+        # モデルの最終層（classifier）の部分だけ３クラス分類に書き変える
+        
+    def forward(self, x):
+        x = self.model(x)
+        return x

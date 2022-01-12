@@ -19,8 +19,10 @@ def train(data_loader, model, scheduler, criterion, optimizer, device):
             param.grad = None
         
         # 画像と目的変数を持っている
-        inputs, targets = data
+        inputs = data['image']
+        targets = data['targets']
         # デバイスに転送
+
         inputs = inputs.to(device, dtype=torch.float)
         targets = targets.to(device, dtype=torch.long)
         # オプティマイザの勾配を0で初期化
@@ -94,7 +96,9 @@ def evaluate(data_loader, model, scheduler, criterion, device):
     with torch.no_grad():
     # with torch.inference_mode():
         for data in tqdm.tqdm(data_loader, desc='eval'):
-            inputs, targets = data
+            # 画像と目的変数を持っている
+            inputs = data['image']
+            targets = data['targets']
 
             inputs = inputs.to(device, dtype=torch.float)
             targets = targets.to(device, dtype=torch.long)
