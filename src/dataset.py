@@ -1,6 +1,10 @@
 import torch
+import torchvision
+import torchvision.transforms as transforms
 
 import numpy as np
+import hydra
+
 
 from PIL import Image
 from PIL import ImageFile
@@ -71,3 +75,28 @@ class ClassificationDataset:
             'image': torch.tensor(image, dtype=torch.float),
             'targets': torch.tensor(targets, dtype=torch.long),
         }
+        
+# MNISTデータセットのロード
+def load_MNIST(batch=128, num_workers=2):
+    transform = transforms.Compose([transforms.ToTensor(),
+                                transforms.Normalize((0.1307,), (0.3081,))])
+
+    train_dataset = torchvision.datasets.MNIST(root=hydra.utils.to_absolute_path('./data'),
+                                        train=True,
+                                        download=True,
+                                        transform=transform)
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                        batch_size=batch,
+                                        shuffle=True,
+                                        num_workers=num_workers)
+
+    val_dataset = torchvision.datasets.MNIST(root=hydra.utils.to_absolute_path('./data'),
+                                        train=False,
+                                        download=True,
+                                        transform=transform)
+    val_loader = torch.utils.data.DataLoader(val_dataset,
+                                        batch_size=batch,
+                                        shuffle=True,
+                                        num_workers=num_workers)
+
+    return {'train': train_loader, 'validation': val_loader}

@@ -1,0 +1,3 @@
+name: MyNet
+params:
+  num_classes: 1

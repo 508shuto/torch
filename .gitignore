@@ -131,6 +131,9 @@ dmypy.json
 # MyFolder
 .DS_Store
 input/*
+output/*
+models/*
+data/*
 *.png
 *.jpg
 
