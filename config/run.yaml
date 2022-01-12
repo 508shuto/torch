@@ -1,0 +1,32 @@
+globals:
+  ex_name: test_01
+  debug: false
+  num_epochs: 1
+  seed: 42
+  user: miyazaki
+  fold: 0
+data:
+  test_data_dir: ./input/test
+  test_df_path: ./input/test.csv
+  train_data_dir: ./input/train
+  train_df_path: ./input/train.csv
+defaults:
+- _self_
+- model: MyNet
+- dataset: DefaultDataset
+- loader: DefaultDataloader
+- split: StratifiedKFold
+- optimizer: Adam
+- loss: CrossEntropyLoss
+- scheduler: CosineAnnealingLR
+- callback: DefaultCallback
+hydra:
+  run:
+    dir: ./output/${globals.ex_name}
+  sweep:
+    dir: ./output/${globals.ex_name}
+    subdir: ${model.name}_${dataset.name}_fold${globals.fold}
+  job_logging:
+    formatters:
+      simple:
+        format: '[%(asctime)s][%(name)s] line%(lineno)d [%(levelname)s] %(message)s'

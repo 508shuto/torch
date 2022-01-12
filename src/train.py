@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 import albumentations
+import sklearn
 import torch
 
 from sklearn import metrics
@@ -13,6 +14,7 @@ from tqdm import tqdm
 import dataset
 import engine
 from model import get_model
+
 
 if __name__ == '__main__':
     # train.csvと、png形式の画像を格納したtrain_pngディレクトリを配置
@@ -26,22 +28,18 @@ if __name__ == '__main__':
 
     # 学習用データセットの読み込み
     df = pd.read_csv(os.path.join(data_path, 'train.csv'))
-
     # 画像用インデックス
     images = df.ImageId.values.tolist()
-
     # 画像パスのリスト
     images = [
         os.path.join(data_path, 'train_png', i + '.png') for i in images
     ]
-
     # 二値の目的変数のnumpy配列
     targets = df.targets.values
     
     # モデルの取得
     # ?事前学習済みの重みの有無の両者を試す
     model = get_model(pretrained=True)
-
     # モデルをデバイスに転送
     model.to(device)
 
