@@ -126,7 +126,7 @@ def evaluate(data_loader, model, scheduler, criterion, device):
     total_preds = np.concatenate(total_preds)
     total_labels = np.concatenate(total_labels)
     
-    # !カッパスコアの計算確認
+    # !カッパスコアの計算確認 -> OK
     score = cohen_kappa_score(total_labels, total_preds, weights="quadratic")
 
     if scheduler is not None:

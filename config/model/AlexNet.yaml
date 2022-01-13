@@ -1,0 +1,3 @@
+name: AlexNet
+params:
+  num_classes: 10

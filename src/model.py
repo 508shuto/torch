@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pretrainedmodels
 
 import timm
 
@@ -15,9 +16,20 @@ def get_model(config):
     """    
     model_config = config["model"]
     model_name = model_config["name"]
-    model_params = model_config["params"]
-
-    model = eval(model_name)(model_params)
+    if model_name == 'ResNet18':
+      model = pretrainedmodels.__dict__['resnet18'](pretrained='imagenet')
+      model.last_linear = nn.Sequential(
+        nn.BatchNorm1d(512),
+        nn.Dropout(0.25),
+        nn.Linear(in_features=512, out_features=2048),
+        nn.ReLU(),
+        nn.BatchNorm1d(2048, eps=1e-05, momentum=0.1),
+        nn.Dropout(0.5),
+        nn.Linear(in_features=2048, out_features=1),
+      )
+    else:
+      model_params = model_config["params"]
+      model = eval(model_name)(model_params)
     # eval関数　：　文字列をpythonのコードとして実行する
     # modelのインスタンス化してることになる
     return model
@@ -32,7 +44,7 @@ class MyNet(nn.Module):
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
         self.fc1 = nn.Linear(12*12*64, 128)
-        self.fc2 = nn.Linear(128, 10)
+        self.fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -50,7 +62,7 @@ class MyNet(nn.Module):
         return x
     
 class AlexNet(nn.Module):
-    def __init__(self):
+    def __init__(self, params=None):
         super(AlexNet, self).__init__()
         # 畳み込み層
         self.conv1 = nn.Conv2d(
@@ -105,7 +117,7 @@ class AlexNet(nn.Module):
         self.dropout2 = nn.Dropout(0.5)
         self.fc3 = nn.Linear(
             in_features=4096,
-            out_features=1000
+            out_features=1
         )
 
     def forward(self, image):
@@ -133,12 +145,12 @@ class AlexNet(nn.Module):
         x = torch.softmax(x, dim=1)    # サイズ： (bs, 1000)
         return x
 
-class EfficientNet_v2(nn.Module):
+class EffNetV2_b0(nn.Module):
     """
     Model Class for EfficientNet v2 Model
     """
-    def __init__(self, num_classes=3, model_name='tf_efficientnetv2_b0', pretrained=True):
-        super(EfficientNet_v2, self).__init__()
+    def __init__(self, num_classes=1, model_name='tf_efficientnetv2_b0', pretrained=True):
+        super(EffNetV2_b0, self).__init__()
         self.model = timm.create_model(model_name, pretrained=pretrained, in_chans=3)
         self.model.classifier = nn.Linear(self.model.classifier.in_features, num_classes)
         # モデルの最終層（classifier）の部分だけ３クラス分類に書き変える

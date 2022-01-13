@@ -101,13 +101,13 @@ def run(cfg: DictConfig) -> None:
         train_dataset = ClassificationDataset(
             image_path=train_images,
             targets=train_targets,
-            resize=(28, 28),
+            resize=(256, 256),
             augmentations=aug
             )
         valid_dataset = ClassificationDataset(
             image_path=valid_images,
             targets=valid_targets,
-            resize=(28, 28),
+            resize=(256, 256),
             augmentations=aug
             )
 
@@ -140,7 +140,7 @@ def run(cfg: DictConfig) -> None:
     best_score = 0.
     best_thresh = 0.
     best_loss = np.inf
-    early_epoch = 10
+    early_epoch = 2
     count = 0
     
     # TODO:fast progressの実装
@@ -187,7 +187,7 @@ def run(cfg: DictConfig) -> None:
                 os.makedirs(hydra.utils.to_absolute_path(cfg['data']['model_save_dir']), exist_ok=True)
             else:
                 pass
-            torch.save(model.state_dict(), hydra.utils.to_absolute_path(f'{cfg['data']['model_save_dir']}/fold_{fold:02d}_bestscore.pth'))
+            torch.save(model.state_dict(), hydra.utils.to_absolute_path(f"{cfg['data']['model_save_dir']}/fold_{fold:02d}_bestscore.pth"))
         elif early_epoch < count:
             break
         else:

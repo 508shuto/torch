@@ -3,10 +3,10 @@ test:
   num_workers: 0
   shuffle: false
 train:
-  batch_size: 512
-  num_workers: 8
+  batch_size: 256
+  num_workers: 2
   shuffle: true
 valid:
-  batch_size: 512
-  num_workers: 8
+  batch_size: 256
+  num_workers: 2
   shuffle: false
